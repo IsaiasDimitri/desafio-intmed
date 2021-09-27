@@ -5,21 +5,14 @@ Docker e docker-composer
 Python 3.6+
 
 ```
-git clone [repositorio url] desafio
+git clone https://github.com/IsaiasDimitri/desafio-intmed.git desafio
 cd desafio
 docker-compose build
-docker-compose -rm api makemigrations
-docker-compose -rm api makemigrations
-docker-compose -rm api migrate
+docker-compose up
 ```
 Opcionalmente, voce pode criar um superuser. Somente com ele voce pode fazer todas as listagens
 ```
-docker-compose -rm api createsuperuser
-```
-
-Para rodar o projeto, use:
-```
-docker-composer up
+docker-compose rm -rm api python manage.py createsuperuser
 ```
 
 ### API endpoints
