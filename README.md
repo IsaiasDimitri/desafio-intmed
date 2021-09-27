@@ -7,13 +7,16 @@ Python 3.6+
 ```
 git clone https://github.com/IsaiasDimitri/desafio-intmed.git desafio
 cd desafio
+```
+Para evitar erros, confira se o arquivo 'docker-entrypoint.sh' está no formato LF, e se necessário modifique-o.
+
+```
 docker-compose build
 docker-compose up
 ```
-Opcionalmente, voce pode criar um superuser. Somente com ele voce pode fazer todas as listagens
-```
-docker-compose rm -rm api python manage.py createsuperuser
-```
+
+Por padrão, você já pode capturar um token com o superusuário padrão de acesso administrador/admin123.  
+Com esse usuário você será capaz de criar e listar nas URL's que usuários normais não podem.
 
 ### API endpoints
 
