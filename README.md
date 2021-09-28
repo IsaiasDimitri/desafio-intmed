@@ -20,6 +20,9 @@ Com esse usuário você será capaz de criar e listar nas URL's que usuários no
 
 ### API endpoints
 
+O arquivo collection.json contem todas as requisições e exemplos de consulta/cadastro.  
+Ele pode ser importado pelo Insomnia, ou pelo Postman.
+
 - base_url = localhost:8000/
 
 | Url | Descrição |

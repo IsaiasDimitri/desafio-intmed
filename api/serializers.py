@@ -6,9 +6,13 @@ from rest_framework.authtoken.models import Token
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["first_name", "last_name", "username", "password"]
+        fields = [
+            "first_name",
+            "last_name",
+            "username",
+        ]
 
-    extra_kwargs = {"password": {"write_only": True, "required": True}}
+    # extra_kwargs = {"password": {"write_only": True, "required": True}}
 
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
@@ -31,12 +35,12 @@ class MedicoSerializer(serializers.ModelSerializer):
         model = Medico
         depth = 2
         fields = [
-            'id',
-            'nome',
-            'crm',
-            'email',
-            'telefone',
-            'especialidade'
+            "id",
+            "nome",
+            "crm",
+            "email",
+            "telefone",
+            "especialidade",
         ]
 
 
@@ -45,23 +49,32 @@ class AgendaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Agenda
-        depth = 2
-        fields = ["id", "medico", "dia", "horarios"]
+        fields = [
+            "id",
+            "medico",
+            "dia",
+            "horarios",
+        ]
 
 
 class ConsultaSerializer(serializers.ModelSerializer):
     dia = serializers.SerializerMethodField()
     medico = serializers.SerializerMethodField()
 
-    def get_agenda(self, obj):
+    def get_dia(self, obj):
         return obj.agenda.dia
 
     def get_medico(self, obj):
-        return MedicoSerializer(Medico.objects.filter(
-            id=obj.agenda.medico).first(), read_only=True).data
-
+        return MedicoSerializer(
+            Medico.objects.filter(id=obj.agenda.medico.id).first(),
+            read_only=True,
+        ).data
 
     class Meta:
         model = Consulta
-        depth = 2
-        fields = ["id", "dia", "horario", "data_agendamento"]
+        fields = [
+            "id",
+            "dia",
+            "medico",
+            "horario",
+        ]

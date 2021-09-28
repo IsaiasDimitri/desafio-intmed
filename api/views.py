@@ -34,16 +34,21 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         super(UserViewSet, self).create(request, *args, **kwargs)
-        return Response({"message": "Usuário criado com sucesso!"}, status=status.HTTP_201_CREATED)
+        return Response(
+            {"message": "Usuário criado com sucesso!"}, status=status.HTTP_201_CREATED
+        )
+
     def list(self, request, *args, **kwargs):
         print(request.user.is_superuser)
         if not request.user.is_superuser:
             return Response(dict(status=405), status=status.HTTP_405_METHOD_NOT_ALLOWED)
         return super(UserViewSet, self).list(request, *args, **kwargs)
+
     def update(self, request, *args, **kwargs):
         if not request.user.is_superuser:
             return Response(dict(status=405), status=status.HTTP_405_METHOD_NOT_ALLOWED)
         return super(UserViewSet, self).update(request, *args, **kwargs)
+
 
 class CustomObtainAuthToken(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
@@ -98,16 +103,19 @@ class AgendaViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         if not request.user.is_superuser:
             return Response(dict(status=405), status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        return super(UserViewSet, self).create(request, *args, **kwargs)
+        return super(AgendaViewSet, self).create(request, *args, **kwargs)
+
     def list(self, request, *args, **kwargs):
         print(request.user.is_superuser)
         if not request.user.is_superuser:
             return Response(dict(status=405), status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        return super(UserViewSet, self).list(request, *args, **kwargs)
+        return super(AgendaViewSet, self).list(request, *args, **kwargs)
+
     def update(self, request, *args, **kwargs):
         if not request.user.is_superuser:
             return Response(dict(status=405), status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        return super(UserViewSet, self).update(request, *args, **kwargs)
+        return super(AgendaViewSet, self).update(request, *args, **kwargs)
+
 
 class ConsultaViewSet(viewsets.ModelViewSet):
     queryset = Consulta.objects.all()
@@ -127,7 +135,7 @@ class ConsultaViewSet(viewsets.ModelViewSet):
         consulta = Consulta()
         consulta.owner = request.user
         try:
-            agenda = Agenda.objects.get(pk=request.data.get("agenda_id"))
+            agenda = Agenda.objects.get(pk=request.data.get("agenda"))
         except Agenda.DoesNotExist as e:
             error = dict(status=400, error={"message": str(e)})
             return Response(error, status=status.HTTP_404_NOT_FOUND)
@@ -140,7 +148,7 @@ class ConsultaViewSet(viewsets.ModelViewSet):
             error = dict(
                 status=400,
                 error={
-                    "message": f"O valor {horario} tem um formato inválido. Deve estar no formato HH:MM."
+                    "message": f"{horario} tem um formato inválido. Deve estar no formato HH:MM."
                 },
             )
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
@@ -157,15 +165,15 @@ class ConsultaViewSet(viewsets.ModelViewSet):
             )
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
-        for horario in agenda.horarios:
-            if str(horario.strftime("%H:%M")) == horario:
+        for hora in agenda.horarios:
+            if str(hora.strftime("%H:%M")) == horario:
                 if Consulta.objects.filter(
-                    agenda__dia=agenda.dia, horarios=horario
+                    agenda__dia=agenda.dia, horario=horario
                 ).exists():
                     error = dict(
                         status=400,
                         error={
-                            "message": "Já existe uma consulta marcada neste horário!"
+                            "message": "horário indisponível!"
                         },
                     )
                     return Response(error, status=status.HTTP_400_BAD_REQUEST)
@@ -179,7 +187,7 @@ class ConsultaViewSet(viewsets.ModelViewSet):
                 )
                 if agenda_horario.exists():
                     agenda_obj = agenda_horario.first()
-                    agenda_obj.schedule.remove(horario)
+                    agenda_obj.horarios.remove(hora)
                     agenda_obj.save()
 
                 serializer = ConsultaSerializer(consulta)
@@ -188,7 +196,7 @@ class ConsultaViewSet(viewsets.ModelViewSet):
         error = dict(
             status=400,
             error={
-                "message": "Ocorreu algum erro na tentativa de marcar uma consulta!"
+                "message": "erro ao marcar consulta."
             },
         )
         return Response(error, status=status.HTTP_400_BAD_REQUEST)
