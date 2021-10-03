@@ -1,16 +1,16 @@
+import datetime
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.auth.models import AbstractUser
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import UserManager
 from django.core.validators import MaxValueValidator
+from django.core.exceptions import ValidationError
 
 
 class User(AbstractUser):
     username = models.CharField(_("username"), max_length=255, unique=True)
-    email = models.EmailField(_("email"), max_length=255, null=True)
-    first_name = models.CharField(_("first name"), max_length=30, blank=True)
-    last_name = models.CharField(_("last name"), max_length=30, blank=True)
+    email = models.EmailField(_("email"), max_length=255,blank=True, null=True)
 
     USERNAME_FIELD = "username"
     objects = UserManager()
@@ -55,7 +55,7 @@ class Medico(models.Model):
     )
 
     def __str__(self):
-        return self.nome
+        return '%d: %s' % (self.id, self.nome)
 
     class Meta:
         ordering = ["nome"]
@@ -80,7 +80,13 @@ class Agenda(models.Model):
         return f"{self.medico} - dia: {self.dia}"
 
     class Meta:
+        unique_together = ['medico', 'dia']
         ordering = ["dia"]
+    
+    def save(self, *args, **kwargs):
+        if self.dia < datetime.date.today():
+            raise ValidationError("A data deve ser de hoje em diante.")
+        super(Agenda, self).save(*args, **kwargs)
 
 
 class Consulta(models.Model):

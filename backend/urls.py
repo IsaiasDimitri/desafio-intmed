@@ -23,7 +23,7 @@ router.register("consultas", ConsultaViewSet, basename="consultas-viewset")
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include(router.urls)),
-    path("api-token-auth/", CustomObtainAuthToken.as_view(), name="api_token_auth"),
+    path("login/", CustomObtainAuthToken.as_view()),
     path("api-auth/", include("rest_framework.urls")),
 ]
 

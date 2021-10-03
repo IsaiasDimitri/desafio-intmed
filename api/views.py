@@ -17,6 +17,11 @@ from .serializers import (
     EspecialidadeSerializer,
     MedicoSerializer,
 )
+from .filters import (
+    EspecialidadeFilter,
+    MedicoFilter,
+    AgendaFilter,
+)
 import datetime
 import time
 
@@ -39,7 +44,6 @@ class UserViewSet(viewsets.ModelViewSet):
         )
 
     def list(self, request, *args, **kwargs):
-        print(request.user.is_superuser)
         if not request.user.is_superuser:
             return Response(dict(status=405), status=status.HTTP_405_METHOD_NOT_ALLOWED)
         return super(UserViewSet, self).list(request, *args, **kwargs)
@@ -52,42 +56,34 @@ class UserViewSet(viewsets.ModelViewSet):
 
 class CustomObtainAuthToken(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
-        response = super(CustomObtainAuthToken, self).post(request, *args, **kwargs)
-        token = Token.objects.get(key=response.data["token"])
-        return Response({"token": token.key})
+        serializer = self.serializer_class(data=request.data,
+                                           context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        token, created = Token.objects.get_or_create(user=user)
+        return Response({
+            'token': token.key,
+            'user_id': user.pk,
+            'email': user.email
+        })
 
 
-class EspecialidadeViewSet(viewsets.ModelViewSet):
+class EspecialidadeViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Especialidade.objects.all()
     serializer_class = EspecialidadeSerializer
-
-    def get_queryset(self):
-        queryset = Especialidade.objects.all()
-        search = self.request.query_params.get("search")
-        if search is not None:
-            queryset = queryset.filter(nome__contains=search)
-        return queryset
+    filterset_class = EspecialidadeFilter
 
 
-class MedicoViewSet(viewsets.ModelViewSet):
+class MedicoViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Medico.objects.all()
     serializer_class = MedicoSerializer
-
-    def get_queryset(self):
-        queryset = Medico.objects.all()
-        search = self.request.query_params.get("search")
-        if search is not None:
-            queryset = queryset.filter(nome__contains=search)
-
-        especialidade = self.request.query_params.get("especialidade")
-        if especialidade is not None:
-            especialidade = self.request.query_params.getlist("especialidade")
-            queryset = queryset.filter(especialidade__in=especialidade)
-        return queryset
+    filterset_class = MedicoFilter
 
 
-class AgendaViewSet(viewsets.ModelViewSet):
+class AgendaViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Agenda.objects.all()
     serializer_class = AgendaSerializer
+    filterset_class = AgendaFilter
 
     def get_queryset(self):
         today = datetime.date.today()
@@ -99,23 +95,6 @@ class AgendaViewSet(viewsets.ModelViewSet):
                     agenda.horarios.remove(horario)
                     agenda.save()
         return queryset
-
-    def create(self, request, *args, **kwargs):
-        if not request.user.is_superuser:
-            return Response(dict(status=405), status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        return super(AgendaViewSet, self).create(request, *args, **kwargs)
-
-    def list(self, request, *args, **kwargs):
-        print(request.user.is_superuser)
-        if not request.user.is_superuser:
-            return Response(dict(status=405), status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        return super(AgendaViewSet, self).list(request, *args, **kwargs)
-
-    def update(self, request, *args, **kwargs):
-        if not request.user.is_superuser:
-            return Response(dict(status=405), status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        return super(AgendaViewSet, self).update(request, *args, **kwargs)
-
 
 class ConsultaViewSet(viewsets.ModelViewSet):
     queryset = Consulta.objects.all()
@@ -135,7 +114,7 @@ class ConsultaViewSet(viewsets.ModelViewSet):
         consulta = Consulta()
         consulta.owner = request.user
         try:
-            agenda = Agenda.objects.get(pk=request.data.get("agenda"))
+            agenda = Agenda.objects.get(pk=request.data.get("agenda_id"))
         except Agenda.DoesNotExist as e:
             error = dict(status=400, error={"message": str(e)})
             return Response(error, status=status.HTTP_404_NOT_FOUND)
@@ -172,9 +151,7 @@ class ConsultaViewSet(viewsets.ModelViewSet):
                 ).exists():
                     error = dict(
                         status=400,
-                        error={
-                            "message": "horário indisponível!"
-                        },
+                        error={"message": "horário indisponível!"},
                     )
                     return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
@@ -195,9 +172,7 @@ class ConsultaViewSet(viewsets.ModelViewSet):
 
         error = dict(
             status=400,
-            error={
-                "message": "erro ao marcar consulta."
-            },
+            error={"message": "erro ao marcar consulta."},
         )
         return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
